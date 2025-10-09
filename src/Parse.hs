@@ -1,10 +1,3 @@
---  __________   _____           __           .__     
---  \______   \_/ ____\  ____  _/  |_   ____  |  |__  
---   |       _/\   __\ _/ __ \ \   __\_/ ___\ |  |  \ 
---   |    |   \ |  |   \  ___/  |  |  \  \___ |   Y  \
---   |____|_  / |__|    \___  > |__|   \___  >|___|  /
---          \/              \/             \/      \/ 
---
 module Parse where
 
 import System.Process (readProcess)
@@ -13,6 +6,11 @@ import Data.Char (isSpace)
 import Data.List (isPrefixOf, isInfixOf)		
 import System.Console.ANSI
 import Text.Printf (printf)
+
+data Module = Module
+  { name   :: String 
+  , action :: IO String
+  }
 
 hostnameGet, shellGet, kernelGet, getRAM, distroGet, idGet, installDataGet, uptimeGet, usernameGet, pkgsNumGet:: IO String 
 getListPkg :: String -> IO String

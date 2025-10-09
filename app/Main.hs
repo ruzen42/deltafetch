@@ -18,41 +18,23 @@ main = do
     printLogo
     putStrLn ""
 
-    distro <- distroGet
     putStrColor "OS: " intensity color
-    putStr distro 
 
-    cpu <- cpuGet 
     putStrColor "CPU: " intensity color
-    putStrLn cpu
 
-    ram <- getRAM
     putStrColor "RAM: " intensity color
-    putStrLn ram
     
-    uptime <- uptimeGet 
     putStrColor "UPTIME: " intensity color
-    putStrLn uptime
     
-    wm <- wmGet 
     putStrColor "WM: " intensity color
-    putStrLn wm
 
-    pkgs <- pkgsNumGet 
     putStrColor "PKGS: " intensity color
-    putStr pkgs
 
-    installDate <- installDataGet 
     putStrColor "Install data: " intensity color
-    putStrLn installDate
 
-    kernel <- kernelGet 
     putStrColor "Kernel: " intensity color
-    putStr kernel
 
-    shell <- shellGet 
     putStrColor "Shell: " intensity color
-    putStr shell
 
     putStrColor "DeltaFetch: " intensity color
     putStrLn ver
