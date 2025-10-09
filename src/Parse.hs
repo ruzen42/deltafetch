@@ -1,0 +1,113 @@
+--  __________   _____           __           .__     
+--  \______   \_/ ____\  ____  _/  |_   ____  |  |__  
+--   |       _/\   __\ _/ __ \ \   __\_/ ___\ |  |  \ 
+--   |    |   \ |  |   \  ___/  |  |  \  \___ |   Y  \
+--   |____|_  / |__|    \___  > |__|   \___  >|___|  /
+--          \/              \/             \/      \/ 
+--
+module Parse where
+
+import System.Process (readProcess)
+import PkgManagers
+import Data.Char (isSpace)
+import Data.List (isPrefixOf, isInfixOf)		
+import System.Console.ANSI
+import Text.Printf (printf)
+
+hostnameGet, shellGet, kernelGet, getRAM, distroGet, idGet, installDataGet, uptimeGet, usernameGet, pkgsNumGet:: IO String 
+getListPkg :: String -> IO String
+
+getListPkg "apt" = readProcess "dpkg" ["--list"] ""
+getListPkg "dnf" = readProcess "sh" ["-c", " dnf list --installed | wc -l"] ""
+getListPkg "pacman" =  readProcess "pacman" ["-Q"] ""
+getListPkg "zypper" =  readProcess "zypper" ["se", "-i"] ""
+getListPkg "slackpkg" = readProcess "sh" ["-c", " ls /var/log/packages | wc -l"] ""
+getListPkg "emerge" = readProcess "sh" ["-c", "ls /var/lib/portage/world | wc -l"] ""
+getListPkg "base" = readProcess "base" [""] ""
+getListPkg _ = return "-"
+
+hostnameGet = readProcess "hostname" [] ""
+
+usernameGet = readProcess "whoami" [] ""
+
+kernelGet = readProcess "uname" ["-r"] ""
+
+getRAM = do
+    output <- readProcess "free" ["-h"] ""
+    let rawLine = words $ lines output !! 1
+        total = rawLine !! 1
+        used = rawLine !! 2
+    return $ used ++ " / " ++ total ++ " "
+		
+distroGet = do 
+    name <- readProcess "sh" ["-c", ". /etc/os-release && echo $NAME"] ""
+    version <- readProcess "sh" ["-c", ". /etc/os-release && echo $VERSION"] ""
+    versionCodename <- readProcess "sh" ["-c", ". /etc/os-release && echo $VERSION_CODENAME"] ""
+    return $ filter (/= '\n') name ++ " " ++ filter (/= '\n') version ++ " " ++ versionCodename
+
+pkgsNumGet = do
+    pkgManager <- checkPkgManager  	
+    output <- getListPkg pkgManager
+    if output == "-"
+    then return "-"
+    else return output
+
+shellGet = readProcess "sh" ["-c", "echo $SHELL"] ""
+
+cpuGet = do
+    cpuInfo <- readFile "/proc/cpuinfo"  
+    let modelNameLine = head (filter ("model name" `isPrefixOf`) (lines cpuInfo))  
+    return $ drop 2 (dropWhile (/= ':') modelNameLine)
+
+idGet = readProcess "sh" ["-c", ". /etc/os-release && echo $ID"] ""
+
+colorGet :: String -> (ColorIntensity, Color) 
+colorGet id = case id of
+    "slackware\n"  -> (Dull, Blue) 
+    "nuros\n"      -> (Dull, Blue) 
+    "buildx\n"     -> (Dull, Cyan) 
+    "ptu\n"        -> (Dull, Red) 
+    "arch\n"       -> (Dull, Cyan) 
+    "fedora\n"     -> (Dull, Blue)
+    "void\n"       -> (Dull, Green)
+    "gentoo\n"     -> (Dull, Magenta)
+    "artix\n"      -> (Dull, Cyan)
+    "mint\n"       -> (Dull, Green)
+    "debian\n"     -> (Dull, Red)
+    "ubuntu\n"     -> (Dull, Yellow)
+    _              -> (Dull, White) 
+
+installDataGet = do
+    versionInfo <- readFile "/proc/version"
+    let afterPreempt = dropWhile (not . isPrefixOf "PREEMPT_DYNAMIC") (wordsBySpace versionInfo)
+        dateWords = drop 1 afterPreempt
+    return $ unwords $ take 6 dateWords
+
+wordsBySpace :: String -> [String]
+wordsBySpace = words
+
+formatUptime :: Int -> String
+formatUptime totalSeconds =
+    let (days, remainder) = totalSeconds `divMod` (60 * 60 * 24)
+        (hours, remainder2) = remainder `divMod` (60 * 60)
+        (minutes, _) = remainder2 `divMod` 60
+    in printf "%d days, %02d hours, %02d minutes" days hours minutes
+
+uptimeGet = do
+    uptimeStr <- readFile "/proc/uptime"
+    let uptimeSeconds = read (head (words uptimeStr)) :: Double
+        totalSeconds = floor uptimeSeconds :: Int
+    return $ formatUptime totalSeconds
+
+trim :: String -> String
+trim = f . f
+  where f = reverse . dropWhile isSpace
+
+wmGet:: IO String
+wmGet = do
+  wm <- readProcess "sh" ["-c", "xprop -root _NET_SUPPORTING_WM_CHECK | grep -oE '0x[0-9a-f]+' | xargs -I{} xprop -id {} _NET_WM_NAME | awk -F'\"' '{print $2}'"] ""
+  let result = trim wm
+  if null result
+    then return "unknown"
+    else return result
+
