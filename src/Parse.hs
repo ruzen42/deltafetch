@@ -12,6 +12,9 @@ data Module = Module
   , action :: IO String
   }
 
+modules :: [Module]
+modules = [Module 
+
 hostnameGet, shellGet, kernelGet, getRAM, distroGet, idGet, installDataGet, uptimeGet, usernameGet, pkgsNumGet:: IO String 
 getListPkg :: String -> IO String
 
