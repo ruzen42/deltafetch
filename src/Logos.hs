@@ -1,15 +1,3 @@
---   __    __  ______   ______           __              __       
---  |  \  |  \/      \ /      \         |  \            |  \      
---  | $$  | $|  $$$$$$|  $$$$$$\______ _| $$_    _______| $$____  
---  | $$__| $| $$___\$| $$_  \$/      |   $$ \  /       | $$    \ 
---  | $$    $$\$$    \| $$ \  |  $$$$$$\$$$$$$ |  $$$$$$| $$$$$$$\
---  | $$$$$$$$_\$$$$$$| $$$$  | $$    $$| $$ __| $$     | $$  | $$
---  | $$  | $|  \__| $| $$    | $$$$$$$$| $$|  | $$_____| $$  | $$
---  | $$  | $$\$$    $| $$     \$$     \ \$$  $$\$$     | $$  | $$
---  \ $$   \$$ \$$$$$$ \$$     \$$$$$$$  \$$$$  \$$$$$$$\ $$   \$$
---                                                                
---                                                                
---                                                                        
 module Logos 
   ( archLogo
   , debianLogo
@@ -35,25 +23,24 @@ module Logos
 import Parse
 import System.Console.ANSI
 
-printLogo :: IO ()
-printLogo = do
-    distroId <- idGet
+printLogo :: String -> IO ()
+printLogo distroId = do
     case distroId of
-        "arch\n"      -> archLogo
-        "slackware\n" -> slackwareLogo
-        "void\n"      -> voidLogo
-        "nuros\n"     -> nurosLogo
-        "nixos\n"     -> nixosLogo
-        "ubuntu\n"    -> ubuntuLogo
-        "fedora\n"    -> fedoraLogo
-        "gentoo\n"    -> gentooLogo
-        "alpine\n"    -> alpineLogo
-        "artix\n"     -> artixLogo
-        "kali\n"      -> kaliLogo
-        "parrot\n"    -> parrotLogo
-        "mint\n"      -> mintLogo
-        "ptu\n"       -> ptyLogo
-        "buildx\n"    -> buildXLogo
+        "arch"      -> archLogo
+        "slackware" -> slackwareLogo
+        "void"      -> voidLogo
+        "nuros"     -> nurosLogo
+        "nixos"     -> nixosLogo
+        "ubuntu"    -> ubuntuLogo
+        "fedora"    -> fedoraLogo
+        "gentoo"    -> gentooLogo
+        "alpine"    -> alpineLogo
+        "artix"     -> artixLogo
+        "kali"      -> kaliLogo
+        "parrot"    -> parrotLogo
+        "mint"      -> mintLogo
+        "ptu"       -> ptyLogo
+        "buildx"    -> buildXLogo
         _             -> linuxLogo
 
 printLogoWithColor :: Color -> [String] -> IO ()

@@ -50,7 +50,7 @@ executables:
     dependencies:
     - deltafetch
     - ansi-terminal
-    - async 
+    - optparse-applicative
 
 tests:
   deltafetch-test:

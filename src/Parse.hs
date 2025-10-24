@@ -1,8 +1,10 @@
 
 module Parse ( Module(..)
-             , modules
+             , defaultModules
              , printModule
              , idGet
+             , trim
+             , colorGet
              , printMapModules) where
 
 import System.Process (readProcess)
@@ -18,8 +20,8 @@ data Module = Module
   , action :: IO String
   }
 
-modules :: [Module]
-modules =
+defaultModules :: [Module]
+defaultModules =
   [ Module { name = "Hostname",    action = hostnameGet }
   , Module { name = "Username",    action = usernameGet }
   , Module { name = "Kernel",      action = kernelGet }
@@ -29,17 +31,17 @@ modules =
   , Module { name = "Packages",    action = pkgsNumGet }
   , Module { name = "Shell",       action = shellGet }
   , Module { name = "WM/DE",       action = wmGet }
-  , Module { name = "InstallData", action = installDataGet }
+  , Module { name = "InstallDate", action = installDataGet }
   , Module { name = "Uptime",      action = uptimeGet }
   , Module { name = "ID",          action = idGet }
   ]
 
 printModule m color = do
   setSGR [SetColor Foreground Dull color]
-  putStr ("[" ++ name m ++ "]: ")
+  putStr $ name m ++ ": "
   setSGR [Reset]
   value <- action m
-  putStrLn (trim value)
+  putStrLn $ trim value
 
 printMapModules :: [Module] -> Color -> IO ()
 printMapModules mods color = mapM_ (\m -> printModule m color) mods
@@ -96,21 +98,21 @@ shellGet = readProcess "sh" ["-c", "echo $SHELL"] ""
 idGet :: IO String
 idGet = readProcess "sh" ["-c", ". /etc/os-release && echo $ID"] ""
 
-colorGet :: String -> (ColorIntensity, Color)
+colorGet :: String -> Color
 colorGet id = case id of
-  "slackware\n" -> (Dull, Blue)
-  "nuros\n"     -> (Dull, Blue)
-  "buildx\n"    -> (Dull, Cyan)
-  "ptu\n"       -> (Dull, Red)
-  "arch\n"      -> (Dull, Cyan)
-  "fedora\n"    -> (Dull, Blue)
-  "void\n"      -> (Dull, Green)
-  "gentoo\n"    -> (Dull, Magenta)
-  "artix\n"     -> (Dull, Cyan)
-  "mint\n"      -> (Dull, Green)
-  "debian\n"    -> (Dull, Red)
-  "ubuntu\n"    -> (Dull, Yellow)
-  _             -> (Dull, White)
+  "slackware\n" -> Blue
+  "nuros\n"     -> Blue
+  "buildx\n"    -> Cyan
+  "ptu\n"       -> Red
+  "arch\n"      -> Cyan
+  "fedora\n"    -> Blue
+  "void\n"      -> Green
+  "gentoo\n"    -> Magenta
+  "artix\n"     -> Cyan
+  "mint\n"      -> Green
+  "debian\n"    -> Red
+  "ubuntu\n"    -> Yellow
+  _             -> White
 
 installDataGet :: IO String
 installDataGet = do
