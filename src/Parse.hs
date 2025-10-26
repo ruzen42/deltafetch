@@ -22,18 +22,15 @@ data Module = Module
 
 defaultModules :: [Module]
 defaultModules =
-  [ Module { name = "Hostname",    action = hostnameGet }
-  , Module { name = "Username",    action = usernameGet }
-  , Module { name = "Kernel",      action = kernelGet }
-  , Module { name = "CPU",         action = cpuGet }
-  , Module { name = "RAM",         action = getRAM }
-  , Module { name = "Distro",      action = distroGet }
-  , Module { name = "Packages",    action = pkgsNumGet }
+  [ Module { name = "OS",          action = distroGet }
+  , Module { name = "Pkgs",    action = pkgsNumGet }
+  , Module { name = "WM",       action = wmGet }
   , Module { name = "Shell",       action = shellGet }
-  , Module { name = "WM/DE",       action = wmGet }
+  , Module { name = "Kernel",      action = kernelGet }
   , Module { name = "InstallDate", action = installDataGet }
   , Module { name = "Uptime",      action = uptimeGet }
-  , Module { name = "ID",          action = idGet }
+  , Module { name = "CPU",         action = cpuGet }
+  , Module { name = "RAM",         action = getRAM }
   ]
 
 printModule m color = do
@@ -100,18 +97,18 @@ idGet = readProcess "sh" ["-c", ". /etc/os-release && echo $ID"] ""
 
 colorGet :: String -> Color
 colorGet id = case id of
-  "slackware\n" -> Blue
-  "nuros\n"     -> Blue
-  "buildx\n"    -> Cyan
-  "ptu\n"       -> Red
-  "arch\n"      -> Cyan
-  "fedora\n"    -> Blue
-  "void\n"      -> Green
-  "gentoo\n"    -> Magenta
-  "artix\n"     -> Cyan
-  "mint\n"      -> Green
-  "debian\n"    -> Red
-  "ubuntu\n"    -> Yellow
+  "slackware" -> Blue
+  "nuros"     -> Blue
+  "buildx"    -> Cyan
+  "ptu"       -> Red
+  "arch"      -> Cyan
+  "fedora"    -> Blue
+  "void"      -> Green
+  "gentoo"    -> Magenta
+  "artix"     -> Cyan
+  "mint"      -> Green
+  "debian"    -> Red
+  "ubuntu"    -> Yellow
   _             -> White
 
 installDataGet :: IO String

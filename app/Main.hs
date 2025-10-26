@@ -21,7 +21,7 @@ optionsParser = Options
      <> short 'c'
      <> metavar "COLOR"
      <> help "Output color (Red, Blue, Cyan, Green, Yellow, Magenta, etc.)"
-     <> value "White"
+     <> value "auto"
      <> showDefault )
   <*> optional (strOption
       ( long "defaultModules"
