@@ -8,10 +8,13 @@ import Logos (printLogo)
 import System.Console.ANSI
 import Data.Char (toLower)
 import Control.Monad (when)
+import qualified Data.Text as T
+import Data.Text.IO as T (putStrLn)
 
 data Options = Options
-  { optColor   :: String
-  , optModules :: Maybe String
+  { optColor   :: T.Text 
+  , optLogo    :: T.Text 
+  , optModules :: Maybe T.Text 
   } 
 
 optionsParser :: Parser Options
@@ -24,13 +27,18 @@ optionsParser = Options
      <> value "auto"
      <> showDefault )
   <*> optional (strOption
+      ( long "logo"
+     <> short 'l'
+     <> metavar "LOGO"
+     <> help "Set fetch logo" ))
+  <*> optional (strOption
       ( long "defaultModules"
      <> short 'm'
      <> metavar "LIST"
      <> help "Comma-separated module list (e.g. CPU,Kernel,RAM)" ))
 
-parseColor :: String -> Color
-parseColor s = case map toLower s of
+parseColor :: T.Text -> Color
+parseColor s = case T.toLower s of 
   "black"   -> Black
   "red"     -> Red
   "green"   -> Green
@@ -44,9 +52,9 @@ parseColor s = case map toLower s of
 main :: IO ()
 main = do
   opts <- execParser optsInfo
-  distroId <- fmap trim idGet
+  distroId <- idGet
 
-  let userColor = map toLower (optColor opts)
+  let userColor = T.toLower $ optColor opts 
       baseColor = if userColor == "auto"
                     then colorGet distroId
                     else parseColor userColor
@@ -54,21 +62,15 @@ main = do
       selectedModules = case optModules opts of
         Nothing -> defaultModules
         Just listStr ->
-          let names = map trim $ splitByComma listStr
-          in filter (\m -> name m `elem` names) defaultModules
+          let names = map trim $ T.split (== ',') listStr 
+          in Prelude.filter (\m -> name m `Prelude.elem` map T.unpack names) defaultModules
 
   printLogo distroId 
-  putStrLn ""
+  T.putStrLn ""
   printMapModules selectedModules baseColor
 
 optsInfo :: ParserInfo Options
 optsInfo = info (optionsParser <**> helper)
   ( fullDesc
- <> progDesc "deltafetch — minimal system info CLI tool"
+ <> progDesc "deltafetch — fastfetch on Haskell"
  <> header "deltafetch" )
-
-splitByComma :: String -> [String]
-splitByComma [] = []
-splitByComma s  = case break (== ',') s of
-  (x, ',':rest) -> x : splitByComma rest
-  (x, "")       -> [x]

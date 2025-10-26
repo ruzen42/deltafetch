@@ -9,9 +9,10 @@ clean:
 	@echo Cleaning...
 	@stack clean
 
-install: all 
+install: install-local
 	@echo Installing...
-	@install -m755 deltafetch /usr/local/bin/deltafetch
+	@install -m755 ~/local/bin/deltafetch /usr/local/bin/deltafetch
+	@rm ~/.local/bin/deltafetch
 
 install-local: all
 	@echo Installing in ~/.local/bin...
