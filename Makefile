@@ -1,18 +1,23 @@
-# hsfetch
+# Deltafetch Ruzen42  
 
 all:
 	@echo Building...
-	@cabal build
+	@set -e 
+	@stack build
 
 clean:
 	@echo Cleaning...
-	@cabal clean
+	@stack clean
 
-install: 
+install: all 
 	@echo Installing...
-	@install -m755 hsfetch /usr/local/bin/hsfetch
+	@install -m755 deltafetch /usr/local/bin/deltafetch
+
+install-local: all
+	@echo Installing in ~/.local/bin...
+	@stack install
 
 uninstall: 
 	@echo Uninstalling...
-	@rm -rf /usr/local/bin/rfetch
+	@rm -rf /usr/local/bin/deltafetch
 
