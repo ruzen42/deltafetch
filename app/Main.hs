@@ -3,8 +3,6 @@
 module Main (main) where
 
 import Options.Applicative
-import Parse (defaultModules, trim, idGet, colorGet, printMapModules, name)
-import Logos (printLogo)
 import System.Console.ANSI
 import Data.Char (toLower)
 import Control.Monad (when)
@@ -15,7 +13,7 @@ data Options = Options
   { optColor   :: T.Text
   , optLogo    :: Maybe T.Text
   , optModules :: Maybe T.Text
-  }
+  } deriving Show
 
 optionsParser :: Parser Options
 optionsParser = Options
@@ -48,25 +46,11 @@ parseColor s = case T.toLower s of
   "cyan"    -> Cyan
   "white"   -> White
   _         -> White
+
 main :: IO ()
 main = do
   opts <- execParser optsInfo
-  distroId <- idGet
-
-  let userColor = T.toLower $ optColor opts
-      baseColor = if userColor == "auto"
-                    then colorGet distroId
-                    else parseColor userColor
-
-      selectedModules = case optModules opts of
-        Nothing -> defaultModules
-        Just listStr ->
-          let names = map (trim . T.unpack) $ T.split (== ',') listStr
-          in Prelude.filter (\m -> name m `Prelude.elem` names) defaultModules
-
-  printLogo distroId
-  T.putStrLn ""
-  printMapModules selectedModules baseColor
+  print opts
 
 optsInfo :: ParserInfo Options
 optsInfo = info (optionsParser <**> helper)

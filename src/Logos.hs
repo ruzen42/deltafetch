@@ -20,7 +20,6 @@ module Logos
   , printLogo
   ) where
 
-import Parse
 import System.Console.ANSI
 
 printLogo :: String -> IO ()
