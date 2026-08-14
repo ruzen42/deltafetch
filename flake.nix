@@ -12,7 +12,6 @@
       {
         devShell = pkgs.mkShell {
           buildInputs = with pkgs; [
-            haskell.compiler.native-bignum.ghc9103
             cabal-install
             stack
             git
