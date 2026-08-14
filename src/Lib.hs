@@ -1,6 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-module Lib where
+{-# LANGUAGE ForeignFunctionInterface #-}
+
+module Lib (
+  moduleOS, 
+  moduleCPU, 
+  moduleKernel, 
+  getLogo, 
+  ) where
 
 import Module (Module(..), Logo(..))
 import System.Posix.Unistd (getSystemID, systemName, release)
@@ -8,6 +15,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import Control.Exception (catch, IOException)
 import Data.Text (Text)
+import Foreign.C.String
 
 -- Modules 
 moduleOS :: IO Module
@@ -18,13 +26,14 @@ moduleOS = do
 moduleKernel :: IO Module
 moduleKernel = do
   info <- getSystemID 
-  pure $ Module{name="kernel", out=(T.pack $ systemName info)}
+  pure $ Module{name="kernel", out=(T.pack $ (systemName info) ++ " " ++ (release info))}
 
-moduleCPU :: IO Module 
-moduleCPU = do 
-  info <- getCPU 
+moduleCPU :: Logo -> IO Module 
+moduleCPU logo = do 
+  info <- case logo of
+            FreeBSD -> getCPUFreeBSD
+            Linux   -> getCPULinux
   pure $ Module{name="cpu   ", out=info}
-
 
 getDistroName :: IO Text
 getDistroName = parseOSRelease `catch` \(_ :: IOException) -> pure "Linux"
@@ -48,8 +57,8 @@ getLogo = do
     "FreeBSD" -> FreeBSD
     _         -> Linux
 
-getCPU :: IO T.Text
-getCPU = do
+getCPULinux :: IO T.Text
+getCPULinux = do
     cpuinfo <- TIO.readFile "/proc/cpuinfo"
     pure $ case T.breakOn "model name" cpuinfo of
         (_, rest)
@@ -59,3 +68,12 @@ getCPU = do
                 T.takeWhile (/= '\n') $
                 T.drop 1 $
                 T.dropWhile (/= ':') rest
+
+foreign import ccall "get_cpu_model"
+    c_get_cpu_model :: IO CString
+
+getCPUFreeBSD :: IO Text
+getCPUFreeBSD = do
+    ptr <- c_get_cpu_model
+    str <- peekCString ptr
+    pure $ T.pack str 

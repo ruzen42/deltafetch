@@ -33,6 +33,10 @@ library:
   - directory
   - text-show
   - unix
+  c-sources:
+  - cbits/sysctl_cpu.c 
+  include-dirs:
+    cbits
 
 executables:
   deltafetch:
