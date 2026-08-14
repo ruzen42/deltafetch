@@ -1,6 +1,6 @@
 module Main (main) where
 
-import Lib (moduleOS, moduleKernel, getLogo)
+import Lib 
 import Module (printObj, Module(..))
 import Control.Concurrent.Async (mapConcurrently)
 
@@ -13,6 +13,7 @@ main = do
       moduleActions = 
         [ moduleOS
         , moduleKernel
+        , moduleCPU
         ]
 
   modules <- mapConcurrently id moduleActions
