@@ -18,11 +18,8 @@ import qualified Data.Text as T
 import qualified Data.Text.Read as TR
 import qualified Data.Text.IO as TIO
 import Control.Exception (catch, IOException)
+import Foreign.C.String 
 import Data.Text (Text)
-import Foreign.C.String
-import Foreign.C.Types
-import Foreign.Ptr
-import Foreign.Storable
 import Data.Word
 import System.Directory (doesFileExist)
 import Text.Printf (printf)
