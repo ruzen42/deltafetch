@@ -14,6 +14,9 @@ main = do
         [ moduleOS
         , moduleKernel
         , (moduleCPU logo)
+        , moduleRAM
+        , moduleTPM
+        , moduleSBoot
         ]
 
   modules <- mapConcurrently id moduleActions
