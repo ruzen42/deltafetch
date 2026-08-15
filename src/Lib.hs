@@ -3,13 +3,13 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 
 module Lib (
-  moduleOS, 
-  moduleCPU, 
-  moduleKernel, 
+  moduleOS,
+  moduleCPU,
+  moduleKernel,
   moduleTPM,
   moduleSBoot,
   moduleRAM,
-  getLogo, 
+  getLogo
   ) where
 
 import Module (Module(..), Logo(..))
@@ -20,65 +20,73 @@ import qualified Data.Text.IO as TIO
 import Control.Exception (catch, IOException)
 import Data.Text (Text)
 import Foreign.C.String
+import Foreign.C.Types
+import Foreign.Ptr
+import Foreign.Storable
+import Data.Word
 import System.Directory (doesFileExist)
 import Text.Printf (printf)
 
 --
--- Modules 
+-- Modules
 --
 
 moduleOS :: IO Module
 moduleOS = do
-  distro <- getDistroName 
+  distro <- getDistroName
   pure $ Module{name="os         ", out=distro}
 
 moduleTPM :: IO Module
 moduleTPM = do
-  tpmState <- checkTPM2 
+  tpmState <- checkTPM2
   pure $ Module{name="tpm2       ", out=(check tpmState)}
-  where 
-    check ts = 
-      case ts of 
+  where
+    check ts =
+      case ts of
         True -> "available"
         _    -> "not available"
 
-moduleRAM :: IO Module
-moduleRAM = do 
-  ram <- getRAMLinux 
+moduleRAM :: Logo -> IO Module
+moduleRAM logo = do
+  ram <- getRAM logo
   pure $ Module{name="ram        ", out=ram}
 
 moduleSBoot :: IO Module
 moduleSBoot = do
-  sboot <- checkSBoot 
+  sboot <- checkSBoot
   pure $ Module{name="secure boot", out=(check sboot)}
-  where 
-    check sb = 
-      case sb of 
+  where
+    check sb =
+      case sb of
         True -> "enabled"
         _    -> "disabled"
 
 moduleKernel :: IO Module
 moduleKernel = do
-  info <- getSystemID 
-  pure $ Module{name="kernel     ", out=(T.pack $ (systemName info) ++ " " ++ (release info))}
+  info <- getSystemID
+  pure $
+    Module
+      { name = "kernel     "
+      , out = T.pack $ (systemName info) ++ " " ++ (release info)
+      }
 
-moduleCPU :: Logo -> IO Module 
-moduleCPU logo = do 
+moduleCPU :: Logo -> IO Module
+moduleCPU logo = do
   info <- case logo of
             FreeBSD -> getCPUFreeBSD
             Linux   -> getCPULinux
   pure $ Module{name="cpu        ", out=info}
 
-
 --
 -- Helpers
 --
 
-checkTPM2 :: IO Bool 
-checkTPM2 = doesFileExist "/dev/tpm0" 
+checkTPM2 :: IO Bool
+checkTPM2 = doesFileExist "/dev/tpm0"
 
 checkSBoot :: IO Bool
-checkSBoot = doesFileExist "/sys/firmware/efi/efivars/SecureBoot-8be4df61-93ca-11d2-aa0d-00e098032b8c" 
+checkSBoot =
+  doesFileExist "/sys/firmware/efi/efivars/SecureBoot-8be4df61-93ca-11d2-aa0d-00e098032b8c"
 
 getDistroName :: IO Text
 getDistroName = parseOSRelease `catch` \(_ :: IOException) -> pure "Linux"
@@ -95,84 +103,103 @@ getDistroName = parseOSRelease `catch` \(_ :: IOException) -> pure "Linux"
 
     cleanValue val = T.dropAround (== '"') val
 
-getLogo :: IO Logo 
+getLogo :: IO Logo
 getLogo = do
   info <- getSystemID
-  pure $ case systemName info of 
+  pure $ case systemName info of
     "FreeBSD" -> FreeBSD
     _         -> Linux
 
+--
+-- CPU
+--
+
 getCPULinux :: IO Text
 getCPULinux = do
-    cpuinfo <- TIO.readFile "/proc/cpuinfo"
-    pure $ case T.breakOn "model name" cpuinfo of
-        (_, rest)
-            | T.null rest -> "Unknown"
-            | otherwise ->
-                T.strip $
-                T.takeWhile (/= '\n') $
-                T.drop 1 $
-                T.dropWhile (/= ':') rest
+  cpuinfo <- TIO.readFile "/proc/cpuinfo"
+  pure $ case T.breakOn "model name" cpuinfo of
+    (_, rest)
+      | T.null rest -> "Unknown"
+      | otherwise ->
+          T.strip $
+          T.takeWhile (/= '\n') $
+          T.drop 1 $
+          T.dropWhile (/= ':') rest
 
 foreign import ccall "get_cpu_model"
-    c_get_cpu_model :: IO CString
+  c_get_cpu_model :: IO CString
 
 getCPUFreeBSD :: IO Text
 getCPUFreeBSD = do
-    ptr <- c_get_cpu_model
-    str <- peekCString ptr
-    pure $ T.pack str 
+  ptr <- c_get_cpu_model
+  str <- peekCString ptr
+  pure $ T.pack str
+
+--
+-- RAM
+--
+
+getRAM :: Logo -> IO Text
+getRAM Linux   = getRAMLinux
+getRAM FreeBSD = getRAMFreeBSD
+
+formats :: [Text]
+formats = ["KiB", "MiB", "GiB", "TiB"]
+
+formatRAM :: Float -> [Text] -> (Float, Text)
+formatRAM val [fmt] = (val, fmt)
+formatRAM val (fmt:fmts)
+  | val >= 1024.0 = formatRAM (val / 1024.0) fmts
+  | otherwise     = (val, fmt)
+formatRAM val [] = (val, "KiB")
+
+toHuman :: Float -> Text
+toHuman kib =
+  let (val, unit) = formatRAM kib formats
+  in T.pack $ printf "%.2f %s" val (T.unpack unit)
+
+--
+-- Linux RAM
+--
 
 getRAMLinux :: IO Text
 getRAMLinux = do
-    info <- TIO.readFile "/proc/meminfo"
-    pure $ (parse2Human $ getActive info) <> " / " <> (parse2Human $ getTotal info)
-    where 
-      getTotal :: Text -> Text
-      getTotal info = case T.breakOn "MemTotal" info of
-        (_, rest)
-            | T.null rest -> "0 kB"
-            | otherwise ->
-                T.strip $
-                T.takeWhile (/= 'k') $
-                T.drop 1 $
-                T.dropWhile (/= ':') rest
+  info <- TIO.readFile "/proc/meminfo"
 
-      getActive :: Text -> Text
-      getActive info = case T.breakOn "Active" info of
-        (_, rest)
-            | T.null rest -> "0 kB"
-            | otherwise ->
-                T.strip $
-                T.takeWhile (/= 'k') $
-                T.drop 1 $
-                T.dropWhile (/= ':') rest
+  let total = findValue "MemTotal:" info
+      active = findValue "Active:" info
 
-      textToFloat :: Text -> Float
-      textToFloat txt = case TR.rational txt of
-        Left _ -> 0.0
+  pure $ toHuman active <> " / " <> toHuman total
+
+  where
+    findValue :: Text -> Text -> Float
+    findValue key content =
+      case filter (key `T.isPrefixOf`) (T.lines content) of
+        (line:_) ->
+          case T.words line of
+            (_:valStr:_) -> textToFloat valStr
+            _            -> 0.0
+        _ -> 0.0
+
+    textToFloat :: Text -> Float
+    textToFloat txt =
+      case TR.rational txt of
         Right (val, rest)
           | T.null rest -> val
-          | otherwise   -> 0.0
-     
-      formats :: [Text]
-      formats = ["KiB", "MiB", "GiB", "TiB"]
+        _ -> 0.0
 
-      parse2Human :: Text -> Text
-      parse2Human ram = 
-        let valRaw           = textToFloat ram
-            (val, unit) = format valRaw formats 
-        in T.pack $ printf "%.2f %s" val (T.unpack unit)
+foreign import ccall "get_total_ram_kib"
+  c_get_total_ram_kib :: IO Word64
 
-      format :: Float -> [Text] -> (Float, Text)
-      format val [fmt] = (val, fmt) 
-      format val (fmt:fmts)
-        | val >= 1024.0 = format (val / 1024.0) fmts
-        | otherwise     = (val, fmt)
-      format val []    = (val, "KiB")
+foreign import ccall "get_active_ram_kib"
+  c_get_active_ram_kib :: IO Word64
 
+getRAMFreeBSD :: IO Text
+getRAMFreeBSD = do
+  total <- c_get_total_ram_kib
+  active <- c_get_active_ram_kib
 
-                
-                
-                
-
+  pure $
+    toHuman (fromIntegral active) <>
+    " / " <>
+    toHuman (fromIntegral total)

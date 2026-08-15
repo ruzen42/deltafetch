@@ -14,7 +14,7 @@ main = do
         [ moduleOS
         , moduleKernel
         , (moduleCPU logo)
-        , moduleRAM
+        , (moduleRAM logo)
         , moduleTPM
         , moduleSBoot
         ]
